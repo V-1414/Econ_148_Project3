@@ -18,5 +18,3 @@ env/
 *.xls
 *.xlsx
 
-# Excluded from initial commit; un-ignored in follow-up commit
-Analysis/draft2.ipynb
