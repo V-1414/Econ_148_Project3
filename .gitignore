@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Data files (re-downloadable from Opportunity Insights / Chetty Health Inequality Project)
+*.csv
+*.dta
+*.xls
+*.xlsx
+
+# Excluded from initial commit; un-ignored in follow-up commit
+Analysis/draft2.ipynb
