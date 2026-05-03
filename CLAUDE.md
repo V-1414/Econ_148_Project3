@@ -15,7 +15,7 @@ Working notes for Claude. Update this file as decisions are made so future sessi
 
 ## Data
 
-All raw files live at the project root or in `mobility_analysis_export/`. Working notebook: [mobility_analysis_export/draft1.ipynb](mobility_analysis_export/draft1.ipynb).
+Raw data files live in `Analysis/Data/` (`.dta` and `.csv`) and `Other data/` (`.xls`). They are gitignored — re-download from Opportunity Insights and the Chetty Health Inequality Project. The active working notebook is [Analysis/draft2.ipynb](Analysis/draft2.ipynb); [Analysis/draft1.ipynb](Analysis/draft1.ipynb) is preserved as the 9-predictor baseline.
 
 | Source | File | Used for |
 |---|---|---|
@@ -23,8 +23,8 @@ All raw files live at the project root or in `mobility_analysis_export/`. Workin
 | Geography of Mobility (2014) | `onlinedata3 (2).dta` / `online_data_tables-2.xls` | `gini`, `inc_share_1perc`, `s_rank_8082` |
 | Changing Opportunity (2022) | `cty_covariates.dta` / `cty_covariates.csv` | `mean_commutetime2000`, `gsmn_math_g3_2013`, `singleparent_share2010`, `poor_share2010`, etc. |
 | Health Inequality (Chetty Table 12) | `health_ineq_online_table_12.dta` | `cs00_seg_inc` (income segregation), `score_r` (income-adjusted test-score percentile), `ccd_pup_tch_ratio` (pupil-teacher ratio) — added in draft2 |
-| Social capital | `mobility_analysis_export/social_capital_county.csv` | `ec_county` (economic connectedness) |
-| Urban–rural | `mobility_analysis_export/NCHSurb-rural-codes.csv` | NCHS 6-level urban-rural classification |
+| Social capital | `Analysis/Data/social_capital_county.csv` | `ec_county` (economic connectedness) |
+| Urban–rural | `Analysis/Data/NCHSurb-rural-codes.csv` | NCHS 6-level urban-rural classification |
 | Chetty Table 8 | `Table_8_county_covariates.csv` / `.dta` | Additional covariates |
 
 **Merge key**: 5-digit FIPS = `state * 1000 + county` (integer). Always cast `state` and `county` to `int` before constructing FIPS — some sources load them as float.
@@ -59,7 +59,7 @@ The original specification used 9 predictors. As of the [Analysis/draft2.ipynb](
 - `commute`               = `mean_commutetime2000`
 - `social_capital`        = `ec_county`
 
-**Missing data**: complete-case (`.dropna()`) on the 9 predictors + outcome. Sample size is reported as `len(analytic)`. If switching to imputation, note it here and justify.
+**Missing data**: complete-case (`.dropna()`) on the 11 predictors + outcome. Sample size is reported as `len(analytic)`. If switching to imputation, note it here and justify.
 
 **Regime variables** (for stratified looks, not main predictors): `seg_hi` = above-median `poor_share_black2010`; `pov_hi` = above-median `poor_share2010`; `regime_label` = the 2×2 cross.
 
@@ -75,7 +75,7 @@ When comparing OLS vs RF, report 5-fold CV R² for both — out-of-sample, not i
 
 ## Code & plotting conventions
 
-The notebook uses a fixed palette and matplotlib rcParams (see cell 4 of [draft1.ipynb](mobility_analysis_export/draft1.ipynb)). Reuse them in any new figure so the writeup looks coherent:
+The notebook uses a fixed palette and matplotlib rcParams (see the imports/settings cell of [Analysis/draft2.ipynb](Analysis/draft2.ipynb)). Reuse them in any new figure so the writeup looks coherent:
 
 - Colors: `BLUE=#2C6E9B`, `RED=#C0392B`, `GREEN=#27AE60`, `ORANGE=#E67E22`, `PURPLE=#8E44AD`, `GRAY=#7F8C8D`, background `BG=#F8F9FA`.
 - No top/right spines, dashed grid at 0.35 alpha, DejaVu Sans.
@@ -85,7 +85,7 @@ Standard imports: `numpy`, `pandas`, `matplotlib`, `seaborn`, `pyreadstat` (for 
 
 ## Working norms for Claude
 
-- **Don't introduce a different predictor set or outcome** without flagging it. Stick to the locked-in 9 unless we're explicitly extending.
+- **Don't introduce a different predictor set or outcome** without flagging it. Stick to the locked-in 11 unless we're explicitly extending.
 - **Don't silently change merge logic, FIPS construction, or fallbacks.** They're the result of a several-source reconciliation.
 - **Standardize predictors before any model that compares coefficients across variables.**
 - **Always report the analytic sample size** when models drop rows.
