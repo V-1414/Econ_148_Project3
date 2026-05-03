@@ -68,7 +68,7 @@ The original specification used 9 predictors. As of the [Analysis/draft2.ipynb](
 1. **Baseline OLS** on the 11 standardized predictors, **HC3 robust SEs**.
 2. **OLS + interactions**: 4 theory-motivated terms — `seg_score×school`, `seg_score×single_parent`, `inequality×single_parent`, `seg_score×social_capital`. The interactions continue to use `seg_score` (racial-economic concentration) for direct comparability with the original 9-predictor specification; `seg_income` and `student_teacher_ratio` enter only as main effects.
 3. **OLS by NCHS urban-rural class** (6 strata) — heterogeneity check.
-4. **Random forest** on the same 11 predictors, hyperparameters via 5-fold CV.
+4. **Random forest** on the same 11 predictors. Fixed hyperparameters (`n_estimators=500`, `max_features=0.33`, `min_samples_leaf=5`); 5-fold CV is used to *score* the model, not to tune. If we add tuning later (e.g. `RandomizedSearchCV`), pass `random_state=SEED`.
 5. **RF interpretation**: SHAP values (global importance + direction), SHAP interaction values (top pairs), partial dependence plots for top features.
 
 When comparing OLS vs RF, report 5-fold CV R² for both — out-of-sample, not in-sample, since the question is about what RF *uncovers* beyond linear structure.
@@ -91,6 +91,15 @@ Standard imports: `numpy`, `pandas`, `matplotlib`, `seaborn`, `pyreadstat` (for 
 - **Always report the analytic sample size** when models drop rows.
 - **For the writeup angle, lead with interpretation, not accuracy numbers.** The point is mechanism (interactions, heterogeneity), not predictive horse-race.
 - When adding cells, match the notebook's existing markdown rhythm: brief description → code → one-line interpretation under the figure/table.
+
+## Reproducibility
+
+A core project goal: anyone cloning the repo, downloading the listed data files, and running the active notebook should reproduce every number and figure in the writeup. Two implications:
+
+- **Single seed**. All stochastic operations use the `SEED` constant defined in the imports/setup section of [Analysis/draft2.ipynb](Analysis/draft2.ipynb). Currently `SEED = 42`. NumPy and Python's `random` module are seeded globally; sklearn objects (`RandomForestRegressor`, `KFold`) take `random_state=SEED` explicitly. **Don't introduce a new stochastic call without threading `SEED` into it** — that includes any future `train_test_split`, `RandomizedSearchCV`, `shap.sample`, bootstrap, or permutation-importance call.
+- **Readable steps**. Every code cell is preceded by a markdown cell explaining what the step does and why it belongs there (this is also the course documentation rule). Treat the notebook as something a peer should be able to read top-to-bottom and follow without external context.
+
+Package versions matter for sklearn/SHAP output stability — pin them when this matures into a final submission. The README is the canonical place for download links and run instructions; keep it in sync when the active notebook changes (e.g. when draft2 is superseded).
 
 ## Course coding requirements (hard rules)
 
