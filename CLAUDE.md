@@ -22,7 +22,7 @@ Raw data files live in `Analysis/Data/` (`.dta` and `.csv`) and `Other data/` (`
 | Opportunity Atlas (2018) | `county_outcomes_dta.dta` / `county_outcomes.csv` | Outcome: `kfr_pooled_pooled_p25`; race × sex p25 mobility for gap analysis |
 | Geography of Mobility (2014) | `onlinedata3 (2).dta` / `online_data_tables-2.xls` | `gini`, `inc_share_1perc`, `s_rank_8082` |
 | Changing Opportunity (2022) | `cty_covariates.dta` / `cty_covariates.csv` | `mean_commutetime2000`, `gsmn_math_g3_2013`, `singleparent_share2010`, `poor_share2010`, etc. |
-| Health Inequality (Chetty Table 12) | `health_ineq_online_table_12.dta` | `cs00_seg_inc` (income segregation), `score_r` (income-adjusted test-score percentile), `ccd_pup_tch_ratio` (pupil-teacher ratio) — added in draft2 |
+| Health Inequality (Chetty Table 12) | `health_ineq_online_table_12.dta` | `cs_race_theil_2000` (racial segregation, Theil), `cs00_seg_inc` (income segregation, Theil), `score_r` (income-adjusted test-score percentile), `ccd_pup_tch_ratio` (pupil-teacher ratio) — added in draft2 |
 | Social capital | `Analysis/Data/social_capital_county.csv` | `ec_county` (economic connectedness) |
 | Urban–rural | `Analysis/Data/NCHSurb-rural-codes.csv` | NCHS 6-level urban-rural classification |
 | Chetty Table 8 | `Table_8_county_covariates.csv` / `.dta` | Additional covariates |
@@ -40,18 +40,20 @@ These are settled; don't re-derive in new cells. If a change is needed, update t
 **The 11 predictors** (standardized, mean 0, SD 1 before fitting):
 
 ```python
-PREDICTORS = ["seg_score", "seg_income",
+PREDICTORS = ["seg_race", "seg_income",
               "school_quality", "student_teacher_ratio",
               "single_parent", "inequality", "commute", "social_capital",
               "poor_share2010", "med_hhinc2016", "popdensity2010"]
 ```
 
-The original specification used 9 predictors. As of the [Analysis/draft2.ipynb](Analysis/draft2.ipynb) revision, the segregation construct is captured by **two** complementary measures (racial-economic concentration *and* income segregation) and the school-quality construct is captured by **two** complementary measures (an income-adjusted output measure *and* a resource-input measure). The new variables come from `health_ineq_online_table_12.dta` (Chetty Health Inequality Project, Table 12), which is latin-1 encoded — load with `pyreadstat.read_dta(..., encoding="latin1")`. The merge key is `cty` (5-digit FIPS, integer). When this expansion was made the analytic sample fell from 1,578 to 1,382 counties, driven mostly by `ccd_pup_tch_ratio`'s ~8% missingness.
+The original specification used 9 predictors. As of the [Analysis/draft2.ipynb](Analysis/draft2.ipynb) revision: (a) the segregation construct is captured by **two** complementary Theil-index measures (racial segregation *and* income segregation, both Census 2000 from the Health Inequality Project), and (b) the school-quality construct is captured by **two** complementary measures (an income-adjusted output measure *and* a resource-input measure). All four new variables come from `health_ineq_online_table_12.dta` (Chetty Health Inequality Project, Table 12), which is latin-1 encoded — load with `pyreadstat.read_dta(..., encoding="latin1")`. The merge key is `cty` (5-digit FIPS, integer). The analytic sample is 1,382 counties (down from 1,578 in the original 9-predictor draft, driven mostly by `ccd_pup_tch_ratio`'s ~8% missingness).
+
+The earlier `seg_score = poor_share_black2010` variable was dropped after diagnostic checks showed it was essentially uncorrelated (r ≈ 0.05) with proper Theil-index segregation measures and was more accurately a *Black poverty rate* than a segregation measure. `poor_share_black2010` is still loaded but is no longer used as a predictor; the `seg_hi` regime stratifier now uses `seg_race` instead.
 
 **Constructions** (with fallbacks to handle missing in newer release):
 
-- `seg_score`             = `poor_share_black2010`, fallback `poor_share2010` — racial-economic concentration
-- `seg_income`            = `cs00_seg_inc` — income segregation (Chetty Health Inequality Table 12)
+- `seg_race`              = `cs_race_theil_2000` (Chetty Health Inequality Table 12) — Theil-index racial segregation, Census 2000
+- `seg_income`            = `cs00_seg_inc` (Chetty Health Inequality Table 12) — Theil-index income segregation, Census 2000
 - `inequality`            = `gini2010`, fallback `gini`
 - `single_parent`         = `singlepar_pooled2010`, fallback `singleparent_share2010`
 - `school_quality`        = `score_r` (Chetty Health Inequality Table 12) — income-adjusted test-score percentile. Replaces the prior `gsmn_math_g3_2013` (raw 3rd-grade math).
@@ -61,12 +63,12 @@ The original specification used 9 predictors. As of the [Analysis/draft2.ipynb](
 
 **Missing data**: complete-case (`.dropna()`) on the 11 predictors + outcome. Sample size is reported as `len(analytic)`. If switching to imputation, note it here and justify.
 
-**Regime variables** (for stratified looks, not main predictors): `seg_hi` = above-median `poor_share_black2010`; `pov_hi` = above-median `poor_share2010`; `regime_label` = the 2×2 cross.
+**Regime variables** (for stratified looks, not main predictors): `seg_hi` = above-median `seg_race` (racial-segregation Theil index); `pov_hi` = above-median `poor_share2010`; `regime_label` = the 2×2 cross.
 
 ## Model framework
 
 1. **Baseline OLS** on the 11 standardized predictors, **HC3 robust SEs**.
-2. **OLS + interactions**: 4 theory-motivated terms — `seg_score×school`, `seg_score×single_parent`, `inequality×single_parent`, `seg_score×social_capital`. The interactions continue to use `seg_score` (racial-economic concentration) for direct comparability with the original 9-predictor specification; `seg_income` and `student_teacher_ratio` enter only as main effects.
+2. **OLS + interactions**: 4 theory-motivated terms — `seg_race×school`, `seg_race×single_parent`, `inequality×single_parent`, `seg_race×social_capital`. The interactions use `seg_race` (the racial-segregation Theil index) since the original Chetty 2014 interaction theory was about racial segregation; `seg_income` enters only as a main effect.
 3. **OLS by NCHS urban-rural class** (6 strata) — heterogeneity check.
 4. **Random forest** on the same 11 predictors. Fixed hyperparameters (`n_estimators=500`, `max_features=0.33`, `min_samples_leaf=5`); 5-fold CV is used to *score* the model, not to tune. If we add tuning later (e.g. `RandomizedSearchCV`), pass `random_state=SEED`.
 5. **RF interpretation**: SHAP values (global importance + direction), SHAP interaction values (top pairs), partial dependence plots for top features.
@@ -91,6 +93,7 @@ Standard imports: `numpy`, `pandas`, `matplotlib`, `seaborn`, `pyreadstat` (for 
 - **Always report the analytic sample size** when models drop rows.
 - **For the writeup angle, lead with interpretation, not accuracy numbers.** The point is mechanism (interactions, heterogeneity), not predictive horse-race.
 - When adding cells, match the notebook's existing markdown rhythm: brief description → code → one-line interpretation under the figure/table.
+- **Document non-obvious modeling decisions inline.** When the notebook makes a methodological call that a grader reading top-to-bottom would pause on — *why HC3 SEs and not default? why these specific four interactions? why complete-case rather than imputation? why fixed RF hyperparameters at these values?* — extend the preceding markdown cell with a 1–2 sentence justification grounded in either theory, the Chetty literature, or the structure of the data. **Be conservative.** Don't justify trivial mechanics (loading a CSV, casting a column, drawing a histogram). The test: would a thoughtful reader who knows econometrics still want to know *why this choice*? If yes, explain. If the choice is mechanical or follows from a decision already justified upstream, leave it alone. The goal is to surface real methodological reasoning for graders, not to bury the analysis under commentary.
 
 ## Reproducibility
 
