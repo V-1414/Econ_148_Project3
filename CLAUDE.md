@@ -19,7 +19,7 @@ Raw data files live in `Analysis/Data/` (`.dta` and `.csv`) and `Other data/` (`
 
 | Source | File | Used for |
 |---|---|---|
-| Opportunity Atlas (2018) | `county_outcomes_dta.dta` / `county_outcomes.csv` | Outcome: `kfr_pooled_pooled_p25`; race × sex p25 mobility for gap analysis |
+| Opportunity Atlas (2018) | `county_outcomes_slim.csv` (canonical bundled file; provenance/construction script in README) | Outcome: `kfr_pooled_pooled_p25`; race × sex p25 mobility for gap analysis |
 | Geography of Mobility (2014) | `onlinedata3 (2).dta` / `online_data_tables-2.xls` | `gini`, `inc_share_1perc`, `s_rank_8082` |
 | Changing Opportunity (2022) | `cty_covariates.dta` / `cty_covariates.csv` | `mean_commutetime2000`, `gsmn_math_g3_2013`, `singleparent_share2010`, `poor_share2010`, etc. |
 | Health Inequality (Chetty Table 12) | `health_ineq_online_table_12.dta` | `cs_race_theil_2000` (racial segregation, Theil), `cs00_seg_inc` (income segregation, Theil), `score_r` (income-adjusted test-score percentile), `ccd_pup_tch_ratio` (pupil-teacher ratio) — added in draft2 |

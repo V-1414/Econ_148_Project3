@@ -57,7 +57,7 @@ If you need to re-download the underlying data from primary sources (e.g. to ver
 
 | File | Primary source |
 |---|---|
-| `county_outcomes_dta.dta` | Opportunity Atlas — https://opportunityinsights.org/data/ |
+| `county_outcomes_slim.csv` | Opportunity Atlas — https://opportunityinsights.org/data/ (slim 13-column slice; see "Provenance of `county_outcomes_slim.csv`" below) |
 | `cty_covariates.dta` | Opportunity Insights "Neighborhood Characteristics by County" — https://opportunityinsights.org/data/ |
 | `Table_8_county_covariates.dta` | Chetty, Hendren, Kline, Saez (2014), Table 8 — https://opportunityinsights.org/paper/land-of-opportunity/ |
 | `onlinedata3 (2).dta` | Chetty, Hendren, Kline, Saez (2014), Online Data Table 3 — https://opportunityinsights.org/paper/land-of-opportunity/ |
@@ -66,6 +66,24 @@ If you need to re-download the underlying data from primary sources (e.g. to ver
 | `NCHSurb-rural-codes.csv` | NCHS Urban–Rural Classification Scheme — https://www.cdc.gov/nchs/data_access/urban_rural.htm |
 
 `health_ineq_online_table_12.dta` is **latin-1 encoded** and `NCHSurb-rural-codes.csv` is also read with `encoding="latin1"`; the notebook handles both.
+
+### Provenance of `county_outcomes_slim.csv`
+
+The slim CSV bundled with this submission is the canonical file used by the notebook — no other Opportunity Atlas file is required to reproduce the analysis. It was constructed once from the full Opportunity Atlas release `county_outcomes_dta.dta` (~140 MB, thousands of estimate columns per county), keeping only the 13 columns this analysis uses. For full transparency, the one-time construction step was:
+
+```python
+import pyreadstat
+key_cols = ["state", "county", "cz", "czname",
+            "kfr_black_male_p25",   "kfr_black_female_p25",
+            "kfr_white_male_p25",   "kfr_white_female_p25",
+            "kfr_hisp_male_p25",    "kfr_hisp_female_p25",
+            "kfr_pooled_male_p25",  "kfr_pooled_female_p25",
+            "kfr_pooled_pooled_p25"]
+df, _ = pyreadstat.read_dta("county_outcomes_dta.dta", usecols=key_cols)
+df.to_csv("county_outcomes_slim.csv", index=False)
+```
+
+No values are altered — this is a column projection, not a transformation.
 
 ## What's modelled
 
